@@ -3,7 +3,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
-#include <signal.h>
 #define MAX 10
 
 typedef struct{
@@ -21,23 +20,25 @@ void consulta(semaforos *sem_p){
     printf("Consulta terminada\n");
 }
 
-void *estudiante(semaforos *sem_p){
-    if(sem_trywait(&sem_p->esperando)==0){//intento sentarme en una de las 3 sillas
-        sem_wait(&sem_p->consultando);
-        sem_post(&sem_p->esperando);
-        consulta(sem_p);
-        sem_post(&sem_p->consultando);
+void *estudiante(void *sem_p){
+    semaforos *sem = (semaforos*) sem_p;
+    if(sem_trywait(&sem->esperando)==0){//intento sentarme en una de las 3 sillas
+        sem_wait(&sem->consultando);
+        sem_post(&sem->esperando);
+        consulta(sem);
+        sem_post(&sem->consultando);
     }else{
         printf("Un estudiante se fue porque estaban las 3 sillas ocupadas.\n");
     }
     pthread_exit(EXIT_SUCCESS);
 }
 
-void *asistente(semaforos* sem_p){
-    while(!sem_p->done){
-        if(sem_trywait(&sem_p->ad)==0){//espero a que un estudiante entre a consultar
+void *asistente(void* sem_p){
+    semaforos *sem = (semaforos*) sem_p;
+    while(!sem->done){
+        if(sem_trywait(&sem->ad)==0){//espero a que un estudiante entre a consultar
 
-            sem_wait(&sem_p->ad);//espero a que finalice la consulta
+            sem_wait(&sem->ad);//espero a que finalice la consulta
         }
     }
     pthread_exit(EXIT_SUCCESS);
